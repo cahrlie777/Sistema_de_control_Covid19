@@ -1,0 +1,40 @@
+[t1,x] = ode45(@dinamica,[0 20],[pi / 2,0,0]);
+%plot(t,x(:,1),t,x(:,2));
+%title('Solucion de la dinamica');
+%xlabel('Time t');
+%ylabel('Soluon variable de estado x');
+%legend('x_1(Theta)','x_2(dTheta)');
+
+N1 = 21;
+N2 = 63;
+D = 0.01;
+kt = 1;
+kb = 1;
+R = 0.05;
+J = 5;
+ka = 1;
+Jm = 2;
+D1 = 0.004;
+A = [[0 1]; [-(N1/N2)^2 * ka/J -(D+ kt*kb/R)/J]];
+B = [0 ; kt/(R * J)];
+C = [[1 0]; [ 0 1]];
+
+A1 = [[0 1]; [0 -(D1/Jm + kt/R * 1/Jm)]];
+B1 = [0 ; kt/(R * Jm)];
+C1 = [[1 0]; [ 0 1]];
+
+AA = [[0 1 0 0]; [-(N1/N2)^2 * ka/J -(D+ kt*kb/R)/J 0 0]; [0 0 0 1]; [0 0 0 -(D1/Jm + kt/R * 1/Jm)]];
+BB  = [0 ; kt/(R * Jm); 0; kt/(R * Jm)];
+CC  = [[1 0 0 0]; [0 1 0 0]];
+%[y2,t2,X2] = lsim(pos,tiempo0);
+%plot(t2,X2);
+sys_ol = ss(A,B ,C(1:2), 0);
+%Q = [[1 0 0 0 0];  [0 1 0 0 0]; [0 0 1 0 0];[0 0 0 1 0]; [0 0 0 0 1e10]];
+Q = [[1 0 0];  
+     [0 1 0]; 
+     [0 0 1e12]];
+R = 0.1;
+K1 = lqi (sys_ol, Q, R);
+%Nbar = rscale(sys_ol,K1(1:2));
+C = [[1 0 0];[0 1 0]];
+Ki = [K1(3) K1(3)]; 
