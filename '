@@ -1,0 +1,129 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint
+from scipy.optimize import curve_fit
+from scipy.optimize import minimize
+import numpy as np
+import math
+from scipy.optimize import Bounds
+#Data frames
+df = pd.read_csv("time_series_covid19_confirmed_global.csv")
+df1 = pd.read_csv("time_series_covid19_recovered_global.csv")
+df2 = pd.read_csv("time_series_covid19_deaths_global.csv")
+
+#Datos Guatemala --------------------------------------------------------
+guatei = df.loc[df['Country/Region'] == 'Guatemala']
+guatei = guatei.iloc[0,56:117]
+guater = df1.loc[df1['Country/Region'] == 'Guatemala']
+guater = guater.iloc[0,56:117]
+guated = df2.loc[df2['Country/Region'] == 'Guatemala']
+guated = guated.iloc[0,56:117]
+guates = 17000000 - guater - guatei - guated
+
+#Datos Italia ------------------------------------------------------------
+italiai = df.loc[df['Country/Region'] == 'Italy']
+italiai = italiai.iloc[0,15:117]
+italiar = df1.loc[df1['Country/Region'] == 'Italy']
+italiar = italiar.iloc[0,15:117]
+italiad = df2.loc[df2['Country/Region'] == 'Italy']
+italiad =italiad.iloc[0,15:117]
+italias = 60.36e6- italiar - italiai - italiad
+#Datos China --------------------------------------------------------------
+chinai = df.loc[df['Country/Region']=='chinasuma']
+chinai = chinai.iloc[0,4:117]
+chinar = df1.loc[df1['Country/Region']=='chinasuma']
+chinar = chinar.iloc[0,4:117]
+chinad = df2.loc[df2['Country/Region']=='chinasuma']
+chinad = chinad.iloc[0,4:117]
+chinas = 1.393e9 - chinar - chinar -chinad
+
+def sird(y, t,N,beta,gamma):#,sigma):
+        S,I,R = y
+        dSdt = -beta * S * I / N
+        dIdt = beta * S * I / N - gamma * I #- sigma * I
+        dRdt = gamma * I
+        #dDdt = sigma * I 
+        return  dSdt, dIdt, dRdt#, dDdt
+
+caso = "Italia"
+
+if(caso == "Guatemala"):
+    N =  17000000
+    ndatos = 61
+elif(caso == "Italia"):
+    N = 60.36e6
+    ndatos = 102
+elif(caso == "China"):
+    N = 1.393e9
+    ndatos = 113
+    
+def f(w):
+    beta,gamma = w 
+    I0, R0, D0  = 1,0,0
+    S0 = N - I0 - R0 
+    y0 = [S0, I0, R0]
+    t = np.linspace(0,ndatos,ndatos)
+    sol = odeint(sird,y0,t,args = (N,beta,gamma))
+    S,I,R = sol.T
+    error = 0
+    if(caso == "Guatemala"):
+        error1 = np.mean((guates - S)**2)  
+        error2 = np.mean((guatei - I)**2) 
+        error3 = np.mean((guater - R)**2) 
+    elif(caso == "Italia"):
+        error = np.mean((italias - S)**2) +  np.mean((italiai - I)**2) +  np.mean((italiar- R)**2)# +  np.mean((italiad - D)**2)
+    elif(caso == "China"):
+        error = np.mean((chinas - S)**2) +  np.mean((chinai - I)**2) +  np.mean((chinar -R)**2) # +  np.mean((chinad - D)**2)
+    return math.sqrt(error)
+
+parametros = minimize(f,[0.001, 0.001],method='L-BFGS-B',bounds=[(0.00000001, 0.4), (0.00000001, 0.4)])
+
+beta,gamma= parametros.x
+print(parametros.x)
+# initial conditions and solution-----------------------------------------
+if(caso == "Guatemala"):
+    I0, R0  = 1,0
+    S0 = N - I0 - R0 
+    y0 = [S0, I0, R0]
+elif(caso == "Italia"):
+    I0, R0  = 2,0
+    S0 = N - I0 - R0 
+    y0 = [S0, I0, R0, ]
+elif(caso == "China"):
+    I0, R0  = 548,28,17
+    S0 = N - I0 - R0 
+    y0 = [S0, I0, R0]
+
+t = np.linspace(0,ndatos,ndatos)
+sol = odeint(sird,y0,t,args = (N,beta,gamma))
+S,I,R = sol.T
+
+
+# Plot the data on four separate curves for S(t), I(t) and R(t)
+#plt.plot(t,S,label="susceptible")
+plt.plot(t,I,label="infected")
+#plt.plot(t,R,label="recovered")
+#plt.plot(t,D,label="dead")
+if(caso == "Guatemala"):
+    #guates.plot(kind ='line',label='susceptible_Guatemala')
+    guatei.plot(kind ='line',label='Infected_Guatemala')
+   # guater.plot(kind ='line',label='Recovered_Guatemala')
+    #guated.plot(kind ='line',label='dead_Guatemala')
+    
+elif(caso == "Italia"):
+    #italias.plot(kind ='line',label='Susceptible')
+    italiai.plot(kind ='line',label='Infected_Italy')
+   # italiar.plot(kind ='line',label='Recovered_Italy')
+    #italiad.plot(kind ='line',label='Dead_Italy')
+elif(caso == "China"):
+    #chinas.plot(kind ='line',label='Susceptible')
+    chinai.plot(kind ='line',label='Infected_')
+   # chinar.plot(kind ='line',label='Recovered_')
+   # chinad.plot(kind ='line',label='Dead_')
+
+plt.legend(bbox_to_anchor=[1,0.9])
+plt.xlabel('time (days)')
+plt.ylabel('Number')
+
+#italia.plot(kind = 'line')
+plt.show()
